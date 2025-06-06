@@ -1,0 +1,38 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000T\u0000I\u0000E\u0000N\u0000D\u0000A\u0000_\u0000B\u0000M\u0000_\u0000B\u0000A\u0000C\u0000K\u0000E\u0000N\u0000D\u0000\r\u0000 \u0000#\u0000 \u0000T\u0000I\u0000E\u0000N\u0000D\u0000A\u0000_\u0000B\u0000M\u0000_\u0000B\u0000A\u0000C\u0000K\u0000E\u0000N\u0000D\u0000_\u0000\r\u0000 \u0000",
+  "main": "index.js",
+"scripts": {
+  "start": "node index.js"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.9.0",
+    "bcryptjs": "^3.0.2",
+    "bootstrap": "^5.3.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.17.0",
+    "mongoose": "^8.15.1",
+    "multer": "^2.0.1",
+    "payu-sdk": "^1.1.1",
+    "react-router-dom": "^6.30.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavidLancheros05/TIENDA_BM_BACKEND.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DavidLancheros05/TIENDA_BM_BACKEND/issues"
+  },
+  "homepage": "https://github.com/DavidLancheros05/TIENDA_BM_BACKEND#readme"
+}
