@@ -8,6 +8,7 @@ const apiKey = '4Vj8eK4rloUd272L48hsrarnUA'; // Sandbox de ejemplo
 const apiLogin = 'pRRXKOl8ikMmt9u';            // Sandbox de ejemplo
 const merchantId = '508029';                   // Sandbox
 const accountId = '512321';                    // Sandbox
+const notifyUrl = process.env.PAYU_NOTIFY_URL || 'http://localhost:5000/api/payu/notificacion';
 
 router.post('/crear-transaccion', async (req, res) => {
   console.log('Body recibido:', req.body); // <---- para verificar qué recibes
@@ -35,7 +36,7 @@ router.post('/crear-transaccion', async (req, res) => {
         description: descripcion,
         language: 'es',
         signature: firma,
-        notifyUrl: 'http://localhost:5000/api/payu/notificacion',
+        notifyUrl: notifyUrl,
         additionalValues: {
           TX_VALUE: {
             value: parseFloat(valor),
