@@ -2,59 +2,69 @@ const Usuario = require('../models/Usuario');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Registro de usuario
 const registrar = async (req, res) => {
-
-    console.log('Login recibido:', req.body); // <== Agrega esto
-  const { nombre, correo, contraseña, rol } = req.body;
+  const { correo, password } = req.body;
 
   try {
-    const existe = await Usuario.findOne({ correo });
-    if (existe) return res.status(400).json({ msg: 'Correo ya registrado' });
+    const existeUsuario = await Usuario.findOne({ correo });
+    if (existeUsuario) {
+      return res.status(400).json({ msg: 'El correo ya está registrado' });
+    }
 
-    const hash = await bcrypt.hash(contraseña, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const nuevoUsuario = new Usuario({
-      nombre,
       correo,
-      contraseña: hash,
-      rol
+      password: hashedPassword,
+      rol: 'cliente', // por defecto
     });
 
     await nuevoUsuario.save();
 
-    res.status(201).json({ msg: 'Usuario registrado correctamente' });
-  } catch (err) {
-    res.status(500).json({ msg: 'Error en el servidor', error: err });
+    res.status(201).json({ msg: 'Usuario registrado con éxito' });
+  } catch (error) {
+    console.error('Error en registro:', error);
+    res.status(500).json({ msg: 'Error en el servidor' });
   }
 };
 
+// Login (ya lo tienes)
 const login = async (req, res) => {
-  const { correo, password } = req.body;  // <-- aquí cambiaste "contraseña" por "password"
-
+  const { correo, password } = req.body;
+console.log('Datos recibidos en login:', req.body); // 👈
   try {
     const usuario = await Usuario.findOne({ correo });
-    if (!usuario) return res.status(400).json({ msg: 'Usuario no encontrado' });
+    if (!usuario) {
+      return res.status(400).json({ msg: 'Usuario no encontrado' });
+    }
 
-    const valido = await bcrypt.compare(password, usuario.contraseña);
-    if (!valido) return res.status(400).json({ msg: 'Contraseña incorrecta' });
+     console.log('Usuario encontrado:', usuario); // 👈 Agrega esto
+
+    const passwordValido = await bcrypt.compare(password, usuario.password);
+    if (!passwordValido) {
+      return res.status(400).json({ msg: 'Contraseña incorrecta' });
+    }
 
     const token = jwt.sign({ id: usuario._id, rol: usuario.rol }, process.env.JWT_SECRET, {
-      expiresIn: '7d'
+      expiresIn: '1d',
     });
 
     res.json({
       token,
-      usuario: {
+      user: {
         id: usuario._id,
-        nombre: usuario.nombre,
         correo: usuario.correo,
-        rol: usuario.rol
-      }
+        rol: usuario.rol,
+      },
     });
-  } catch (err) {
-    console.error('Error en login:', err);
-    res.status(500).json({ msg: 'Error en el servidor', error: err.message });
-  }
+  }catch (error) {
+  console.error('Error en login:', error); // 👈 esto es clave
+  res.status(500).json({ msg: 'Error en el servidor' });
+}
 };
 
-module.exports = { registrar, login };
+module.exports = {
+  registrar,
+  login,
+};

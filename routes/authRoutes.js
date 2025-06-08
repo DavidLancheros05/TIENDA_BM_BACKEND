@@ -4,7 +4,7 @@ const router = express.Router();
 const { registrar, login } = require('../controllers/authController');
 const verificarToken = require('../middlewares/authMiddleware');
 
-router.post('/registro', registrar);
+router.post('/register', registrar);
 router.post('/login', login);
 
 // Ruta protegida de prueba

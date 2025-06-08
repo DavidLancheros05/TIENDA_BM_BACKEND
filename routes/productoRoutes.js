@@ -45,15 +45,28 @@ router.get('/categoria/:categoria', async (req, res) => {
 // PUT editar producto
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio } = req.body;
+  const updateData = req.body;
+
+  console.log('Datos para actualizar:', updateData);
+
   try {
-    const productoActualizado = await Producto.findByIdAndUpdate(id, { nombre, precio }, { new: true });
-    if (!productoActualizado) return res.status(404).json({ msg: 'Producto no encontrado' });
+    // Usa $set explícito para evitar problemas
+    const productoActualizado = await Producto.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!productoActualizado)
+      return res.status(404).json({ msg: 'Producto no encontrado' });
+
     res.json(productoActualizado);
   } catch (error) {
+    console.error('Error actualizando producto:', error);
     res.status(500).json({ msg: 'Error actualizando producto' });
   }
 });
+
 
 // DELETE eliminar producto
 router.delete('/:id', async (req, res) => {
