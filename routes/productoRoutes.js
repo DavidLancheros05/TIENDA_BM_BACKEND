@@ -7,13 +7,16 @@ const verificarToken = require('../middlewares/verificarToken'); // Middleware p
 const verificarAdmin = require('../middlewares/adminMiddleware'); // Middleware para validar rol admin
 
 // Crear producto (solo admin)
-router.post('/', verificarToken, verificarAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const nuevoProducto = new Producto(req.body);
-    await nuevoProducto.save();
-    res.status(201).json(nuevoProducto);
+    const filter = {};
+    if (req.query.categoria) {
+      filter.categoria = req.query.categoria;
+    }
+    const productos = await Producto.find(filter);
+    res.json(productos);
   } catch (error) {
-    res.status(400).json({ msg: error.message });
+    res.status(500).json({ msg: error.message });
   }
 });
 
@@ -21,6 +24,18 @@ router.post('/', verificarToken, verificarAdmin, async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     const productos = await Producto.find();
+    res.json(productos);
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+});
+
+
+// Obtener productos por categoría
+router.get('/categoria/:categoria', async (req, res) => {
+  try {
+    const categoria = req.params.categoria;
+    const productos = await Producto.find({ categoria: categoria });
     res.json(productos);
   } catch (error) {
     res.status(500).json({ msg: error.message });
