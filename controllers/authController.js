@@ -1,10 +1,17 @@
-const Usuario = require('../models/Usuario');
+const { Usuario } = require('../models/models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Registro de usuario
 const registrar = async (req, res) => {
-  const { correo, password } = req.body;
+
+  console.log('✅ [authController] Datos recibidos en registrar:', req.body);
+  
+  const { correo, password, nombre } = req.body;
+
+  if (!correo || !password || !nombre) {
+    return res.status(400).json({ msg: 'Todos los campos son obligatorios' });
+  }
 
   try {
     const existeUsuario = await Usuario.findOne({ correo });
@@ -15,9 +22,10 @@ const registrar = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const nuevoUsuario = new Usuario({
+      nombre,
       correo,
       password: hashedPassword,
-      rol: 'cliente', // por defecto
+      rol: 'cliente',
     });
 
     await nuevoUsuario.save();
@@ -29,39 +37,48 @@ const registrar = async (req, res) => {
   }
 };
 
-// Login (ya lo tienes)
+// Login
 const login = async (req, res) => {
   const { correo, password } = req.body;
-console.log('Datos recibidos en login:', req.body); // 👈
+
+  if (!correo || !password) {
+    return res.status(400).json({ msg: 'Correo y contraseña son obligatorios' });
+  }
+
   try {
     const usuario = await Usuario.findOne({ correo });
     if (!usuario) {
       return res.status(400).json({ msg: 'Usuario no encontrado' });
     }
 
-     console.log('Usuario encontrado:', usuario); // 👈 Agrega esto
-
     const passwordValido = await bcrypt.compare(password, usuario.password);
     if (!passwordValido) {
       return res.status(400).json({ msg: 'Contraseña incorrecta' });
     }
 
-    const token = jwt.sign({ id: usuario._id, rol: usuario.rol }, process.env.JWT_SECRET, {
-      expiresIn: '1d',
-    });
+    const token = jwt.sign(
+      {
+        id: usuario._id,
+        rol: usuario.rol,
+        nombre: usuario.nombre,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
     res.json({
       token,
       user: {
         id: usuario._id,
+        nombre: usuario.nombre,
         correo: usuario.correo,
         rol: usuario.rol,
       },
     });
-  }catch (error) {
-  console.error('Error en login:', error); // 👈 esto es clave
-  res.status(500).json({ msg: 'Error en el servidor' });
-}
+  } catch (error) {
+    console.error('Error en login:', error);
+    res.status(500).json({ msg: 'Error en el servidor' });
+  }
 };
 
 module.exports = {
