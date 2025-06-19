@@ -66,15 +66,15 @@ const login = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    res.json({
-      token,
-      user: {
-        id: usuario._id,
-        nombre: usuario.nombre,
-        correo: usuario.correo,
-        rol: usuario.rol,
-      },
-    });
+res.json({
+  token,
+  user: {
+    _id: usuario._id,
+    nombre: usuario.nombre,
+    correo: usuario.correo,
+    rol: usuario.rol
+  }
+});
   } catch (error) {
     console.error('Error en login:', error);
     res.status(500).json({ msg: 'Error en el servidor' });

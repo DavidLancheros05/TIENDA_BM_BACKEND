@@ -6,6 +6,7 @@ const verificarToken = require('../middlewares/verificarToken'); // Middleware p
 const verificarAdmin = require('../middlewares/adminMiddleware'); // Middleware para validar rol admin
 const { Producto, Resena } = require('../models/models');
 
+
 // Ruta GET principal para obtener productos
 router.get('/', async (req, res) => {
   try {

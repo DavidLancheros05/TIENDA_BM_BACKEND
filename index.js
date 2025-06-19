@@ -1,12 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const productoRoutes = require('./routes/productoRoutes');
-const authRoutes = require('./routes/authRoutes');
-const uploadRoutes = require('./routes/uploadRoutes'); // Importar rutas de uploads
 const path = require('path');
-const resenasRoutes = require('./routes/resenas.routes');
+require('dotenv').config();
 
+// Importar modelos
 const {
   Usuario,
   Direccion,
@@ -18,7 +16,13 @@ const {
   HistorialProducto
 } = require('./models/models');
 
-require('dotenv').config();
+// Importar rutas
+const productoRoutes = require('./routes/productoRoutes');
+const authRoutes = require('./routes/authRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const resenasRoutes = require('./routes/resenas.routes');
+const pagosRoutes = require('./routes/pagos.routes'); // ✅ ya está aquí, no repetir
+const ventasRoutes = require('./routes/ventas.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,41 +31,34 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Rutas
-
-app.use('/api/resenas', resenasRoutes);
-
-
+// Rutas API
 app.use('/api/productos', productoRoutes);
-const paymentsRoutes = require('./routes/payments');
-app.use('/api/payu', paymentsRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/uploads', uploadRoutes);   // <-- Aquí montas la ruta upload
-
-// Servir archivos estáticos de uploads para poder acceder a las imágenes
+app.use('/api/uploads', uploadRoutes);
+app.use('/api/resenas', resenasRoutes);
+app.use('/api/pagos', pagosRoutes); // ✅ Ruta de pagos
+app.use('/api/ventas', ventasRoutes);
+// Servir archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-app.get('/api/productos/test', (req, res) => {
-  res.json({ mensaje: 'Ruta de productos funcionando' });
-});
-
-
 
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('API Tienda de Bicis funcionando 🚴‍♂️');
 });
 
-// Conexión a MongoDB y levantar servidor
+// Ruta de test productos
+app.get('/api/productos/test', (req, res) => {
+  res.json({ mensaje: 'Ruta de productos funcionando' });
+});
+
+// Conexión a MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log('Conectado a MongoDB');
+    console.log('✅ Conectado a MongoDB');
     app.listen(PORT, () => {
-      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+      console.log(`🚀 Servidor backend corriendo en http://localhost:${PORT}`);
     });
   })
   .catch((error) => {
-    console.error('Error al conectar a MongoDB:', error);
+    console.error('❌ Error al conectar a MongoDB:', error);
   });
-
-

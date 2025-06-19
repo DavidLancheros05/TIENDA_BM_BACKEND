@@ -81,7 +81,11 @@ const ventaSchema = new mongoose.Schema({
   }],
   total: Number,
   metodoPago: String,
-  estado: { type: String, enum: ['pendiente', 'completada', 'cancelada'], default: 'pendiente' },
+  estado: { 
+  type: String, 
+  enum: ['pendiente', 'pagado', 'completada', 'cancelada'], 
+  default: 'pendiente' 
+},
   fechaVenta: { type: Date, default: Date.now }
 });
 
