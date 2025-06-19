@@ -9,6 +9,16 @@ const usuarioSchema = new mongoose.Schema({
   fechaRegistro: { type: Date, default: Date.now }
 });
 
+// Asegura que siempre se incluya _id en las respuestas JSON
+usuarioSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: function (doc, ret) {
+    ret._id = ret._id || ret.id;
+    delete ret.id; // opcional, para evitar confusión
+  }
+});
+
 // ✅ MODELO: Direccion
 const direccionSchema = new mongoose.Schema({
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
