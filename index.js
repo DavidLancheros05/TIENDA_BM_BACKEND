@@ -16,13 +16,13 @@ const {
   HistorialProducto
 } = require('./models/models');
 
-// Importar rutas
-const productoRoutes = require('./routes/productoRoutes');
-const authRoutes = require('./routes/authRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const resenasRoutes = require('./routes/resenas.routes');
-const pagosRoutes = require('./routes/pagos.routes'); // ✅ ya está aquí, no repetir
-const ventasRoutes = require('./routes/ventas.routes');
+// Importar rutas (✅ nombres actualizados)
+const productoRoutes = require('./routes/producto.routes.js');
+const authRoutes = require('./routes/auth.routes.js');
+const uploadRoutes = require('./routes/upload.routes.js'); // (Renombra el archivo si no lo has hecho aún)
+const resenasRoutes = require('./routes/resenas.routes.js');
+const pagosRoutes = require('./routes/pago.routes.js'); // ✅ nuevo nombre
+const ventasRoutes = require('./routes/ventas.routes.js');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,17 +36,18 @@ app.use('/api/productos', productoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/resenas', resenasRoutes);
-app.use('/api/pagos', pagosRoutes); // ✅ Ruta de pagos
+app.use('/api/pagos', pagosRoutes);
 app.use('/api/ventas', ventasRoutes);
-// Servir archivos estáticos
+
+// Servir archivos estáticos (imágenes u otros)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Ruta de prueba
+// Ruta de prueba general
 app.get('/', (req, res) => {
   res.send('API Tienda de Bicis funcionando 🚴‍♂️');
 });
 
-// Ruta de test productos
+// Ruta de prueba específica de productos
 app.get('/api/productos/test', (req, res) => {
   res.json({ mensaje: 'Ruta de productos funcionando' });
 });
