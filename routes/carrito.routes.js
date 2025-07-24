@@ -44,9 +44,14 @@ router.post('/guardar', authMiddleware, async (req, res) => {
   const usuarioId = req.usuarioId;
 
   try {
+    // 🔒 Solo productos con ID válido y cantidad positiva
+    const productosFiltrados = productos.filter(
+      p => p.producto && p.cantidad > 0
+    );
+
     const carrito = await Carrito.findOneAndUpdate(
       { usuario: usuarioId },
-      { $set: { productos: productos } },
+      { $set: { productos: productosFiltrados } },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     ).populate('productos.producto');
 
