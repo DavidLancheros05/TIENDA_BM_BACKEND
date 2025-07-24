@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 const verificarToken = require('../middlewares/verificarToken');
-const verificarAdmin = require('../middlewares/adminMiddleware');
 
 const {
   crearProducto,
@@ -13,7 +12,7 @@ const {
   agregarResena
 } = require('../controllers/producto.controller');
 
-// CRUD productos
+// CRUD Productos
 router.post('/', crearProducto);
 router.get('/', obtenerProductos);
 router.get('/:id', obtenerProductoPorId);

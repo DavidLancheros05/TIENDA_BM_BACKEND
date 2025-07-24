@@ -11,7 +11,7 @@ const verificarToken = (req, res, next) => {
 
   try {
     const verificado = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuario = verificado; // ahora puedes usar req.usuario en la ruta
+    req.usuarioId = verificado.id; // ✅ campo claro que usarás
     next();
   } catch (error) {
     return res.status(401).json({ mensaje: 'Token inválido' });

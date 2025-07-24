@@ -1,4 +1,9 @@
-// controllers/producto.controller.js
+/**
+ * ============================================
+ * ✅ CONTROLLER: Productos
+ * ============================================
+ */
+
 const { Producto, Resena } = require('../models/models');
 
 // Crear producto
@@ -9,11 +14,11 @@ const crearProducto = async (req, res) => {
     res.status(201).json(nuevoProducto);
   } catch (error) {
     console.error('❌ Error creando producto:', error);
-    res.status(500).json({ msg: 'Error al crear el producto', error: error.message });
+    res.status(500).json({ msg: 'Error al crear producto', error: error.message });
   }
 };
 
-// Obtener productos con filtros
+// Obtener todos los productos (con imagen principal)
 const obtenerProductos = async (req, res) => {
   try {
     const filter = {};
@@ -21,11 +26,21 @@ const obtenerProductos = async (req, res) => {
       filter.tipoProducto = req.query.tipoProducto.trim();
     }
 
-    const productos = await Producto.find(filter);
-    res.json(productos);
+    const productos = await Producto.find(filter).lean();
+
+    // Incluye solo URL principal para cada producto
+    const productosConImagen = productos.map(p => {
+      const principal = p.imagenes?.find(img => img.esPrincipal);
+      return {
+        ...p,
+        imagen: principal ? principal.url : (p.imagenes?.[0]?.url || '')
+      };
+    });
+
+    res.json(productosConImagen);
   } catch (error) {
-    console.error('🔴 Error obteniendo productos:', error);
-    res.status(500).json({ msg: error.message });
+    console.error('❌ Error obteniendo productos:', error);
+    res.status(500).json({ msg: 'Error al obtener productos', error: error.message });
   }
 };
 
@@ -33,14 +48,19 @@ const obtenerProductos = async (req, res) => {
 const obtenerProductoPorId = async (req, res) => {
   try {
     const producto = await Producto.findById(req.params.id);
-    if (!producto) return res.status(404).json({ mensaje: 'Producto no encontrado' });
+
+    if (!producto) {
+      return res.status(404).json({ mensaje: 'Producto no encontrado' });
+    }
+
     res.json(producto);
   } catch (error) {
-    res.status(500).json({ mensaje: 'Error al obtener el producto' });
+    console.error('❌ Error obteniendo producto:', error);
+    res.status(500).json({ mensaje: 'Error al obtener producto', error: error.message });
   }
 };
 
-// Editar producto
+// Actualizar producto
 const actualizarProducto = async (req, res) => {
   try {
     const productoActualizado = await Producto.findByIdAndUpdate(
@@ -48,13 +68,15 @@ const actualizarProducto = async (req, res) => {
       { $set: req.body },
       { new: true }
     );
-    if (!productoActualizado)
+
+    if (!productoActualizado) {
       return res.status(404).json({ msg: 'Producto no encontrado' });
+    }
 
     res.json(productoActualizado);
   } catch (error) {
-    console.error('Error actualizando producto:', error);
-    res.status(500).json({ msg: 'Error actualizando producto' });
+    console.error('❌ Error actualizando producto:', error);
+    res.status(500).json({ msg: 'Error al actualizar producto', error: error.message });
   }
 };
 
@@ -62,24 +84,31 @@ const actualizarProducto = async (req, res) => {
 const eliminarProducto = async (req, res) => {
   try {
     const productoEliminado = await Producto.findByIdAndDelete(req.params.id);
-    if (!productoEliminado)
+
+    if (!productoEliminado) {
       return res.status(404).json({ msg: 'Producto no encontrado' });
-    res.json({ msg: 'Producto eliminado' });
+    }
+
+    res.json({ msg: 'Producto eliminado correctamente' });
   } catch (error) {
-    res.status(500).json({ msg: 'Error eliminando producto' });
+    console.error('❌ Error eliminando producto:', error);
+    res.status(500).json({ msg: 'Error al eliminar producto', error: error.message });
   }
 };
 
-// Crear reseña
+// Agregar reseña
 const agregarResena = async (req, res) => {
   const { estrellas, comentario } = req.body;
 
-  if (estrellas < 1 || estrellas > 5)
-    return res.status(400).json({ error: 'Puntaje inválido' });
+  if (estrellas < 1 || estrellas > 5) {
+    return res.status(400).json({ error: 'Puntaje inválido: 1-5.' });
+  }
 
   try {
     const producto = await Producto.findById(req.params.id);
-    if (!producto) return res.status(404).json({ error: 'Producto no encontrado' });
+    if (!producto) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
 
     const nuevaResena = new Resena({
       usuario: req.usuario.id,
@@ -98,8 +127,8 @@ const agregarResena = async (req, res) => {
 
     res.json({ mensaje: 'Reseña guardada y promedio actualizado' });
   } catch (error) {
-    console.error('[❌ ERROR INTERNO]:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error('❌ Error agregando reseña:', error);
+    res.status(500).json({ error: 'Error interno', detalle: error.message });
   }
 };
 

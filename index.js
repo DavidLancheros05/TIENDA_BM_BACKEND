@@ -23,6 +23,8 @@ const uploadRoutes = require('./routes/upload.routes.js'); // (Renombra el archi
 const resenasRoutes = require('./routes/resenas.routes.js');
 const pagosRoutes = require('./routes/pago.routes.js'); // ✅ nuevo nombre
 const ventasRoutes = require('./routes/ventas.routes.js');
+const ordenesRoutes = require('./routes/ordenes.routes');
+const carritoRoutes = require('./routes/carrito.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,7 +53,8 @@ app.get('/', (req, res) => {
 app.get('/api/productos/test', (req, res) => {
   res.json({ mensaje: 'Ruta de productos funcionando' });
 });
-
+app.use('/api/ordenes', ordenesRoutes);
+app.use('/api/carrito', carritoRoutes);
 // Conexión a MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {

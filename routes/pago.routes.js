@@ -1,37 +1,36 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { Venta } = require('../models/models');
+const { Orden } = require('../models/models'); // ✅ Usa Orden, NO Venta
 
 const WOMPI_API_URL = 'https://sandbox.wompi.co/v1/payment_links';
 const WOMPI_PRIVATE_KEY = process.env.WOMPI_PRIVATE_KEY;
 const INICIO_LINK_PAGO = 'https://checkout.wompi.co/l/';
 
-// ✅ Obtener detalles de una venta (total, productos, etc.)
-router.get('/detalle-venta/:id', async (req, res) => {
+// ✅ Obtener detalles de una orden
+router.get('/detalle-orden/:id', async (req, res) => {
   try {
-    const venta = await Venta.findById(req.params.id).populate('productos.producto');
-    
-    if (!venta) {
-      return res.status(404).json({ error: "Venta no encontrada" });
+    const orden = await Orden.findById(req.params.id).populate('productos.producto');
+
+    if (!orden) {
+      return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    // 🧾 Puedes retornar más campos si quieres
     res.json({
-      total: venta.total,
-      productos: venta.productos.map(p => ({
+      total: orden.total,
+      productos: orden.productos.map(p => ({
         nombre: p.producto.nombre,
         cantidad: p.cantidad,
         precioUnitario: p.precioUnitario
       }))
     });
   } catch (err) {
-    console.error("❌ Error buscando venta:", err.message);
-    res.status(500).json({ error: "Error al obtener detalles de la venta" });
+    console.error("❌ Error buscando orden:", err.message);
+    res.status(500).json({ error: "Error al obtener detalles de la orden" });
   }
 });
 
-// 📌 RUTA PARA CREAR LINK DE PAGO Y GUARDAR LA VENTA
+// 📌 RUTA PARA CREAR LINK DE PAGO Y GUARDAR ORDEN
 router.post('/crear-link-pago', async (req, res) => {
   console.log("📥 [POST] /crear-link-pago llamado");
   console.log("📦 Datos recibidos del frontend:", req.body);
@@ -42,6 +41,7 @@ router.post('/crear-link-pago', async (req, res) => {
       productos,
       total,
       metodoPago,
+      direccionEnvio,
       name,
       description,
       amount_in_cents,
@@ -50,26 +50,30 @@ router.post('/crear-link-pago', async (req, res) => {
       cancel_url,
     } = req.body;
 
-    // 🧪 Validación rápida
+    // ✅ Validación
     if (!usuarioId || !productos || productos.length === 0 || !amount_in_cents || !currency || !name || !description) {
       console.error("⚠️ Datos incompletos para crear el link");
       return res.status(400).json({ error: "Faltan datos obligatorios" });
     }
 
-    // 1️⃣ Registrar venta
-    const venta = new Venta({
+    // 1️⃣ Crear y guardar ORDEN
+    const nuevaOrden = new Orden({
       usuario: usuarioId,
-      productos,
+      productos: productos.map(p => ({
+        producto: p.producto,
+        cantidad: p.cantidad,
+        precioUnitario: 0 // Pon aquí el precio unitario real si lo tienes
+      })),
       total,
       metodoPago: metodoPago || 'PSE',
-      estado: 'pendiente',
-      fechaVenta: new Date(),
+      direccionEnvio: direccionEnvio,
+      estado: 'pendiente'
     });
 
-    await venta.save();
-    console.log("✅ Venta registrada en DB con ID:", venta._id);
+    await nuevaOrden.save();
+    console.log("✅ Orden guardada en DB con ID:", nuevaOrden._id);
 
-    // 2️⃣ Crear el link de pago en Wompi
+    // 2️⃣ Crear link de pago Wompi
     const wompiPayload = {
       name,
       description,
@@ -77,11 +81,11 @@ router.post('/crear-link-pago', async (req, res) => {
       currency,
       single_use: true,
       collect_shipping: false,
-      redirect_url: `${redirect_url}?ventaId=${venta._id}`,
-      cancel_url: `${cancel_url}?ventaId=${venta._id}`,
+      redirect_url: `${redirect_url}?ordenId=${nuevaOrden._id}`,
+      cancel_url: `${cancel_url}?ordenId=${nuevaOrden._id}`,
     };
 
-    console.log("📤 Enviando a Wompi:", wompiPayload);
+    console.log("📤 Enviando payload a Wompi:", wompiPayload);
 
     const response = await axios.post(WOMPI_API_URL, wompiPayload, {
       headers: {
@@ -100,7 +104,7 @@ router.post('/crear-link-pago', async (req, res) => {
     const link_pago = `${INICIO_LINK_PAGO}${idLink}`;
     console.log("🔗 Link de pago generado:", link_pago);
 
-    return res.status(200).json({ link_pago, ventaId: venta._id });
+    return res.status(200).json({ link_pago, ordenId: nuevaOrden._id });
 
   } catch (error) {
     console.error("❌ Error general en crear-link-pago:");
@@ -109,76 +113,72 @@ router.post('/crear-link-pago', async (req, res) => {
     } else {
       console.error("💥 Error inesperado:", error.message);
     }
-    return res.status(500).json({ error: 'Error al crear link de pago o registrar venta.' });
+    return res.status(500).json({ error: 'Error al crear link de pago o registrar orden.' });
   }
 });
 
-// ❌ Marcar venta como cancelada
-router.post('/cancelar-venta', async (req, res) => {
-  const { ventaId } = req.body;
+// ❌ Marcar orden como cancelada
+router.post('/cancelar-orden', async (req, res) => {
+  const { ordenId } = req.body;
 
-  if (!ventaId) {
-    return res.status(400).json({ error: "Falta el ID de la venta" });
+  if (!ordenId) {
+    return res.status(400).json({ error: "Falta el ID de la orden" });
   }
 
   try {
-    const venta = await Venta.findById(ventaId);
+    const orden = await Orden.findById(ordenId);
 
-    if (!venta) {
-      return res.status(404).json({ error: "Venta no encontrada" });
+    if (!orden) {
+      return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    if (venta.estado === 'cancelada') {
-      return res.status(200).json({ mensaje: "La venta ya estaba cancelada." });
+    if (orden.estado === 'cancelada') {
+      return res.status(200).json({ mensaje: "La orden ya estaba cancelada." });
     }
 
-    venta.estado = 'cancelada';
-    await venta.save();
+    orden.estado = 'cancelada';
+    await orden.save();
 
-    return res.status(200).json({ mensaje: "Venta cancelada exitosamente." });
+    return res.status(200).json({ mensaje: "Orden cancelada exitosamente." });
   } catch (error) {
-    console.error("❌ Error cancelando la venta:", error.message);
-    return res.status(500).json({ error: "Error al cancelar la venta" });
+    console.error("❌ Error cancelando la orden:", error.message);
+    return res.status(500).json({ error: "Error al cancelar la orden" });
   }
 });
 
-// 📌 RUTA PARA CONFIRMAR VENTA DESPUÉS DEL PAGO
-router.post('/confirmar-venta', async (req, res) => {
-  console.log("📥 [POST] /confirmar-venta llamado");
+// 📌 Confirmar orden como pagada
+router.post('/confirmar-orden', async (req, res) => {
+  console.log("📥 [POST] /confirmar-orden llamado");
   console.log("📦 Body recibido:", req.body);
 
-  const { ventaId } = req.body;
+  const { ordenId } = req.body;
 
-  if (!ventaId) {
-    console.error("⚠️ No se recibió ventaId en la petición");
-    return res.status(400).json({ error: "Falta el ID de la venta" });
+  if (!ordenId) {
+    console.error("⚠️ No se recibió ordenId");
+    return res.status(400).json({ error: "Falta el ID de la orden" });
   }
 
   try {
-    console.log("🔍 Buscando venta con ID:", ventaId);
-    const venta = await Venta.findById(ventaId);
+    const orden = await Orden.findById(ordenId);
 
-    if (!venta) {
-      console.error("❌ Venta no encontrada con ese ID");
-      return res.status(404).json({ error: "Venta no encontrada" });
+    if (!orden) {
+      console.error("❌ Orden no encontrada con ese ID");
+      return res.status(404).json({ error: "Orden no encontrada" });
     }
 
-    console.log("📄 Venta encontrada:", venta);
-
-    if (venta.estado === 'pagado') {
-      console.log("ℹ️ Venta ya estaba marcada como pagada");
-      return res.status(200).json({ mensaje: "✅ La venta ya estaba marcada como pagada." });
+    if (orden.estado === 'pagado') {
+      return res.status(200).json({ mensaje: "La orden ya estaba marcada como pagada." });
     }
 
-    venta.estado = 'pagado';
-    await venta.save();
-    console.log("💾 Estado actualizado a 'pagado' en venta:", venta._id);
+    orden.estado = 'pagado';
+    await orden.save();
+    console.log("💾 Estado actualizado a 'pagado' en orden:", orden._id);
 
-    return res.status(200).json({ mensaje: "✅ Venta confirmada como pagada." });
+    return res.status(200).json({ mensaje: "Orden confirmada como pagada." });
 
   } catch (error) {
-    console.error("❌ Error confirmando la venta:", error.message);
-    return res.status(500).json({ error: "Error al confirmar la venta" });
+    console.error("❌ Error confirmando la orden:", error.message);
+    return res.status(500).json({ error: "Error al confirmar la orden" });
   }
 });
 
