@@ -1,6 +1,6 @@
 /**
  * ============================================
- * ✅ CONTROLLER: Productos
+ * ✅ CONTROLLER: Productos (ADMIN + PUBLICO)
  * ============================================
  */
 
@@ -18,7 +18,7 @@ const crearProducto = async (req, res) => {
   }
 };
 
-// Obtener todos los productos (con imagen principal)
+// Obtener todos los productos (admin o público)
 const obtenerProductos = async (req, res) => {
   try {
     const filter = {};
@@ -28,7 +28,12 @@ const obtenerProductos = async (req, res) => {
 
     const productos = await Producto.find(filter).lean();
 
-    // Incluye solo URL principal para cada producto
+    // ✅ Si es ADMIN devuelve RAW
+    if (req.query.admin === 'true') {
+      return res.json(productos);
+    }
+
+    // ✅ Público → incluye solo imagen principal
     const productosConImagen = productos.map(p => {
       const principal = p.imagenes?.find(img => img.esPrincipal);
       return {
@@ -48,11 +53,9 @@ const obtenerProductos = async (req, res) => {
 const obtenerProductoPorId = async (req, res) => {
   try {
     const producto = await Producto.findById(req.params.id);
-
     if (!producto) {
       return res.status(404).json({ mensaje: 'Producto no encontrado' });
     }
-
     res.json(producto);
   } catch (error) {
     console.error('❌ Error obteniendo producto:', error);
@@ -68,11 +71,9 @@ const actualizarProducto = async (req, res) => {
       { $set: req.body },
       { new: true }
     );
-
     if (!productoActualizado) {
       return res.status(404).json({ msg: 'Producto no encontrado' });
     }
-
     res.json(productoActualizado);
   } catch (error) {
     console.error('❌ Error actualizando producto:', error);
@@ -84,11 +85,9 @@ const actualizarProducto = async (req, res) => {
 const eliminarProducto = async (req, res) => {
   try {
     const productoEliminado = await Producto.findByIdAndDelete(req.params.id);
-
     if (!productoEliminado) {
       return res.status(404).json({ msg: 'Producto no encontrado' });
     }
-
     res.json({ msg: 'Producto eliminado correctamente' });
   } catch (error) {
     console.error('❌ Error eliminando producto:', error);
