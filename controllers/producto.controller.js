@@ -1,24 +1,24 @@
-/**
- * ============================================
- * ✅ CONTROLLER: Productos (ADMIN + PUBLICO)
- * ============================================
- */
-
+// controllers/producto.controller.js
 const { Producto, Resena } = require('../models/models');
 
-// Crear producto
+
+
 const crearProducto = async (req, res) => {
   try {
+    console.log("🟢 BODY recibido:", req.body);
+
+    // Ya no hay normalizar
     const nuevoProducto = new Producto(req.body);
-    await nuevoProducto.save();
-    res.status(201).json(nuevoProducto);
+    const productoGuardado = await nuevoProducto.save();
+
+    res.status(201).json(productoGuardado);
   } catch (error) {
-    console.error('❌ Error creando producto:', error);
-    res.status(500).json({ msg: 'Error al crear producto', error: error.message });
+    console.error("❌ Error creando producto:", error);
+    res.status(500).json({ message: error.message, stack: error.stack });
   }
 };
 
-// Obtener todos los productos (admin o público)
+// Obtener productos
 const obtenerProductos = async (req, res) => {
   try {
     const filter = {};
@@ -28,12 +28,10 @@ const obtenerProductos = async (req, res) => {
 
     const productos = await Producto.find(filter).lean();
 
-    // ✅ Si es ADMIN devuelve RAW
     if (req.query.admin === 'true') {
       return res.json(productos);
     }
 
-    // ✅ Público → incluye solo imagen principal
     const productosConImagen = productos.map(p => {
       const principal = p.imagenes?.find(img => img.esPrincipal);
       return {
@@ -66,9 +64,10 @@ const obtenerProductoPorId = async (req, res) => {
 // Actualizar producto
 const actualizarProducto = async (req, res) => {
   try {
+    let { imagenes, ...resto } = req.body;
     const productoActualizado = await Producto.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: { ...resto, imagenes } },
       { new: true }
     );
     if (!productoActualizado) {

@@ -9,7 +9,7 @@ const {
   obtenerProductoPorId,
   actualizarProducto,
   eliminarProducto,
-  agregarResena
+  agregarResena,
 } = require('../controllers/producto.controller');
 
 // CRUD Productos
@@ -19,7 +19,7 @@ router.get('/:id', obtenerProductoPorId);
 router.put('/:id', actualizarProducto);
 router.delete('/:id', eliminarProducto);
 
-// Reseñas
+// Reseñas (requiere token)
 router.post('/:id/resena', verificarToken, agregarResena);
 
 module.exports = router;

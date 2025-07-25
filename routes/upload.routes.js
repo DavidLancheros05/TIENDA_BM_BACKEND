@@ -1,26 +1,33 @@
+// routes/upload.routes.js
 const express = require('express');
-const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 
-// Configuración multer
+const router = express.Router();
+
+// Configuración de Multer
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+  destination: function (req, file, cb) {
+    cb(null, './uploads/'); // Asegúrate de que la carpeta exista
   },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // guarda con extensión original
-  }
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now();
+    const ext = path.extname(file.originalname);
+    cb(null, `${uniqueSuffix}${ext}`);
+  },
 });
 
 const upload = multer({ storage });
 
-// Ruta POST para subir imagen
-router.post('/subir-imagen', upload.single('imagen'), (req, res) => {
+// ✅ SIN /api aquí, la ruta real es /api/upload por el index.js
+router.post('/', upload.single('file'), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ mensaje: 'No se subió ningún archivo' });
+    return res.status(400).json({ error: 'No se subió archivo' });
   }
-  res.json({ url: `/uploads/${req.file.filename}` });
+
+  res.json({
+    url: `/uploads/${req.file.filename}`, // Ruta relativa
+  });
 });
 
 module.exports = router;
