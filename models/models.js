@@ -100,13 +100,14 @@ productoSchema.set('toJSON', { virtuals: true });
 //
 const ordenSchema = new mongoose.Schema({
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-  productos: [
-    {
-      producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto' },
-      cantidad: Number,
-      precioUnitario: Number
-    }
-  ],
+productos: [
+  {
+    producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto' },
+    cantidad: Number,
+    color: String,   // ✅
+    talla: String    // ✅
+  }
+],
   total: Number,
   metodoPago: { type: String, default: 'PSE' },
   estado: {
@@ -161,7 +162,9 @@ const carritoSchema = new mongoose.Schema({
   productos: [
     {
       producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto' },
-      cantidad: Number
+      cantidad: Number,
+      color: String,  // 👈 AGREGA ESTO
+      talla: String   // 👈 Y ESTO
     }
   ]
 });
