@@ -3,7 +3,10 @@ const router = express.Router();
 const axios = require('axios');
 const { Orden } = require('../models/models'); // ✅ Usa Orden, NO Venta
 
-const WOMPI_API_URL = 'https://sandbox.wompi.co/v1/payment_links';
+//const WOMPI_API_URL = 'https://sandbox.wompi.co/v1/payment_links';
+const WOMPI_API_URL = 'https://production.wompi.co/v1/payment_links';
+
+
 const WOMPI_PRIVATE_KEY = process.env.WOMPI_PRIVATE_KEY;
 const INICIO_LINK_PAGO = 'https://checkout.wompi.co/l/';
 
