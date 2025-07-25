@@ -1,33 +1,39 @@
 // routes/upload.routes.js
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const router = express.Router();
 
-// Configuración de Multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './uploads/'); // Asegúrate de que la carpeta exista
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now();
-    const ext = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${ext}`);
+// Configurar Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET,
+});
+
+// Multer Storage Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'tienda_bicis',
+    allowed_formats: ['jpg', 'png', 'jpeg'],
   },
 });
 
 const upload = multer({ storage });
 
-// ✅ SIN /api aquí, la ruta real es /api/upload por el index.js
 router.post('/', upload.single('file'), (req, res) => {
+  console.log('👉 req.file:', req.file);
+  console.log('👉 req.body:', req.body);
+
   if (!req.file) {
-    return res.status(400).json({ error: 'No se subió archivo' });
+    return res.status(400).json({ error: 'No se recibió archivo' });
   }
 
-  res.json({
-    url: `/uploads/${req.file.filename}`, // Ruta relativa
-  });
+  // 👇 Siempre usa la propiedad correcta
+  res.json({ url: req.file.url });
 });
 
 module.exports = router;
