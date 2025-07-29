@@ -1,66 +1,45 @@
 const express = require('express');
 const router = express.Router();
-const { Orden } = require('../models/models');
-const axios = require('axios');
+const { Orden } = require('../models/models'); // Importa tu modelo Orden
+const verificarToken = require('../middlewares/verificarToken'); // Middleware para verificar el token del usuario
 
-// 👉 POST para crear link de pago
-router.post('/crear-link-pago', async (req, res) => {
-  console.log('📥 Body recibido:', req.body);
+// 📌 Ruta para obtener una orden por su ID
+router.get('/:id', verificarToken, async (req, res) => {
+    try {
+        const ordenId = req.params.id;
+        const userId = req.usuarioId; // Obtiene el ID de usuario del token
 
-  try {
-    const {
-      usuarioId,
-      productos,
-      total,
-      direccionEnvio,
-      metodoPago,
-      name,
-      description,
-      currency,
-      amount_in_cents,
-      redirect_url,
-      cancel_url
-    } = req.body;
+        // Busca por ID de orden Y ID de usuario para asegurar que el usuario es el dueño de la orden
+        const orden = await Orden.findOne({ _id: ordenId, usuario: userId })
+                                .populate('productos.producto', 'nombre imagenes precio'); // Popula los detalles del producto
 
-    if (!usuarioId || !productos?.length || !total) {
-      console.error('❌ Faltan datos obligatorios');
-      return res.status(400).json({ error: 'Datos incompletos' });
+        if (!orden) {
+            return res.status(404).json({ message: 'Orden no encontrada o no pertenece al usuario.' });
+        }
+
+        res.json(orden);
+    } catch (error) {
+        console.error("❌ Error al obtener la orden por ID:", error);
+        // Maneja CastError para IDs inválidos (ej. ID mal formado)
+        if (error.name === 'CastError') {
+            return res.status(400).json({ message: 'ID de orden inválido.' });
+        }
+        res.status(500).json({ error: 'Error interno del servidor al obtener la orden.' });
     }
-
-    const nuevaOrden = new Orden({
-      usuario: usuarioId,
-      productos: productos.map(p => ({
-        producto: p.producto,
-        cantidad: p.cantidad,
-        precioUnitario: 0
-      })),
-      total,
-      metodoPago,
-      direccionEnvio
-    });
-
-    await nuevaOrden.save();
-    console.log('✅ Orden guardada:', nuevaOrden._id);
-
-    const link_pago = `https://sandbox.wompi.co/checkout?amount_in_cents=${amount_in_cents}&currency=${currency}&redirect_url=${redirect_url}`;
-
-    res.json({ link_pago });
-
-  } catch (err) {
-    console.error('❌ Error interno en crear-link-pago:', err);
-    res.status(500).json({ error: 'Error interno creando link de pago' });
-  }
 });
 
-// ✅ GET / para listar todas las órdenes
-router.get('/', async (req, res) => {
-  try {
-    const ordenes = await Orden.find().populate('usuario').populate('productos.producto');
-    res.json(ordenes);
-  } catch (err) {
-    console.error('❌ Error obteniendo órdenes:', err);
-    res.status(500).json({ error: 'Error obteniendo órdenes' });
-  }
-});
+// Opcional: Puedes mover tu ruta existente 'mis-ventas' (ahora 'mis-ordenes') aquí también:
+// router.get('/mis-ordenes', verificarToken, async (req, res) => {
+//     try {
+//         const userId = req.usuarioId;
+//         const ordenes = await Orden.find({ usuario: userId, estado: 'pagado' })
+//             .populate('productos.producto', 'nombre imagenes precio color tallas')
+//             .sort({ fechaCreacion: -1 });
+//         res.json(ordenes);
+//     } catch (error) {
+//         console.error("❌ Error en /api/ordenes/mis-ordenes:", error);
+//         res.status(500).json({ error: 'Error interno del servidor al obtener las compras.' });
+//     }
+// });
 
-module.exports = router;
+module.exports = router; // <-- ¡Este es el ÚNICO module.exports para este archivo!

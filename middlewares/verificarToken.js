@@ -1,21 +1,19 @@
-// middlewares/verificarToken.js
-
 const jwt = require('jsonwebtoken');
 
-function verificarToken(req, res, next) {
-  const token = req.header('Authorization');
+const verificarToken = (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
 
   if (!token) {
-    return res.status(401).json({ mensaje: 'Acceso denegado. Token no proporcionado.' });
+    return res.status(401).json({ error: 'Token no proporcionado' });
   }
 
   try {
-    const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
-    req.usuario = decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.usuarioId = decoded.id;
     next();
   } catch (error) {
-    res.status(400).json({ mensaje: 'Token inválido.' });
+    return res.status(401).json({ error: 'Token inválido o expirado' });
   }
-}
+};
 
 module.exports = verificarToken;

@@ -1,9 +1,7 @@
 const mongoose = require('mongoose');
 
-//
 // ============================================
 // ✅ MODELO: Usuario
-//
 const usuarioSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
   correo: { type: String, required: true, unique: true },
@@ -21,10 +19,8 @@ usuarioSchema.set('toJSON', {
   }
 });
 
-//
 // ============================================
 // ✅ MODELO: Dirección de envío
-//
 const direccionSchema = new mongoose.Schema({
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
   nombre: String,
@@ -36,10 +32,8 @@ const direccionSchema = new mongoose.Schema({
   esPrincipal: { type: Boolean, default: false }
 });
 
-//
 // ============================================
 // ✅ MODELO: Reseña
-//
 const resenaSchema = new mongoose.Schema({
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
   producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto', required: true },
@@ -48,10 +42,8 @@ const resenaSchema = new mongoose.Schema({
   fecha: { type: Date, default: Date.now }
 });
 
-//
 // ============================================
 // ✅ MODELO: Producto (IMÁGENES embebidas)
-//
 const productoSchema = new mongoose.Schema({
   nombre: { type: String, required: true },
   descripcion: { type: String, required: true },
@@ -72,7 +64,7 @@ const productoSchema = new mongoose.Schema({
     talla: String,
     stock: Number
   }],
-  imagenes: [ // ✅ AHORA ES EMBEBIDO
+  imagenes: [
     {
       url: { type: String, required: true },
       esPrincipal: { type: Boolean, default: false },
@@ -85,7 +77,6 @@ const productoSchema = new mongoose.Schema({
   actualizadoEn: { type: Date, default: Date.now }
 });
 
-// ✅ Hook para timestamp
 productoSchema.pre('save', function (next) {
   this.actualizadoEn = new Date();
   next();
@@ -94,25 +85,73 @@ productoSchema.pre('save', function (next) {
 productoSchema.set('toObject', { virtuals: true });
 productoSchema.set('toJSON', { virtuals: true });
 
-//
 // ============================================
-// ✅ MODELO: Orden
-//
+// ✅ MODELO: Favorito
+const favoritoSchema = new mongoose.Schema({
+  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+  producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto', required: true },
+  fecha: { type: Date, default: Date.now }
+});
+
+// ============================================
+// ✅ MODELO: Historial de cambios del producto
+const historialProductoSchema = new mongoose.Schema({
+  producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto', required: true },
+  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+  cambio: String,
+  antes: mongoose.Schema.Types.Mixed,
+  despues: mongoose.Schema.Types.Mixed,
+  fechaCambio: { type: Date, default: Date.now }
+});
+
+// ============================================
+// ✅ MODELO: Carrito
+const productoCarritoSchema = new mongoose.Schema({
+  producto: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Producto',
+    required: true,
+  },
+  cantidad: {
+    type: Number,
+    required: true,
+  },
+  color: String,
+  talla: String,
+});
+
+const carritoSchema = new mongoose.Schema({
+  usuario: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    required: true,
+    unique: true,
+  },
+  productos: [productoCarritoSchema],
+});
+
+// ============================================
+// ✅ MODELO: Orden (Ahora consolidado con campos de Venta)
 const ordenSchema = new mongoose.Schema({
   usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-productos: [
-  {
-    producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto' },
-    cantidad: Number,
-    color: String,   // ✅
-    talla: String    // ✅
-  }
-],
-  total: Number,
+  productos: [
+    {
+      producto: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Producto',
+        required: true
+      },
+      cantidad: { type: Number, required: true },
+      color: String, // Añadido para el color específico del producto en la orden
+      talla: String, // Añadido para la talla específica del producto en la orden
+      precioUnitario: { type: Number, required: true } // Añadido para guardar el precio en el momento de la compra
+    }
+  ],
+  total: { type: Number, required: true },
   metodoPago: { type: String, default: 'PSE' },
   estado: {
     type: String,
-    enum: ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelada'],
+    enum: ['pendiente', 'pagado', 'enviado', 'entregado', 'cancelada', 'fallido'],
     default: 'pendiente'
   },
   direccionEnvio: {
@@ -124,61 +163,22 @@ productos: [
     departamento: String,
     pais: String
   },
-  linkPago: String,
-  transaccionId: String,
+  linkPago: String, // Para guardar el ID del link de Wompi o el link completo
+  transaccionId: String, // Para guardar el ID de la transacción de Wompi (referencia o ID de evento)
   fechaCreacion: { type: Date, default: Date.now },
-  fechaPago: Date
+  fechaPago: Date // Para registrar cuándo se confirmó el pago
 });
 
-//
-// ============================================
-// ✅ MODELO: Favorito
-//
-const favoritoSchema = new mongoose.Schema({
-  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-  producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto', required: true },
-  fecha: { type: Date, default: Date.now }
-});
+const Orden = mongoose.model('Orden', ordenSchema);
 
-//
-// ============================================
-// ✅ MODELO: Historial de cambios del producto
-//
-const historialProductoSchema = new mongoose.Schema({
-  producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto', required: true },
-  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-  cambio: String,
-  antes: mongoose.Schema.Types.Mixed,
-  despues: mongoose.Schema.Types.Mixed,
-  fechaCambio: { type: Date, default: Date.now }
-});
-
-//
-// ============================================
-// ✅ MODELO: Carrito
-//
-const carritoSchema = new mongoose.Schema({
-  usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-  productos: [
-    {
-      producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto' },
-      cantidad: Number,
-      color: String,  // 👈 AGREGA ESTO
-      talla: String   // 👈 Y ESTO
-    }
-  ]
-});
-
-//
 // ============================================
 // ✅ Exporta todos
-//
 const Carrito = mongoose.model('Carrito', carritoSchema);
 const Usuario = mongoose.model('Usuario', usuarioSchema);
 const Direccion = mongoose.model('Direccion', direccionSchema);
 const Resena = mongoose.model('Resena', resenaSchema);
 const Producto = mongoose.model('Producto', productoSchema);
-const Orden = mongoose.model('Orden', ordenSchema);
+// ELIMINADA: const Venta = mongoose.model('Venta', ventaSchema);
 const Favorito = mongoose.model('Favorito', favoritoSchema);
 const HistorialProducto = mongoose.model('HistorialProducto', historialProductoSchema);
 
@@ -187,8 +187,8 @@ module.exports = {
   Direccion,
   Resena,
   Producto,
-  Orden,
+  Orden, // Ahora Orden lo abarca todo
   Carrito,
   Favorito,
-  HistorialProducto
+  HistorialProducto,
 };

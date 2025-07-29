@@ -1,21 +1,21 @@
 const jwt = require('jsonwebtoken');
 
-const verificarToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+function verificarToken(req, res, next) {
+  const token = req.header('Authorization');
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ mensaje: 'Token no proporcionado' });
+  if (!token || !token.startsWith('Bearer ')) {
+    return res.status(401).json({ mensaje: 'Token inválido o mal formado.' });
   }
-
-  const token = authHeader.split(' ')[1];
 
   try {
-    const verificado = jwt.verify(token, process.env.JWT_SECRET);
-    req.usuarioId = verificado.id; // ✅ campo claro que usarás
+    const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
+    req.usuarioId = decoded.id; // ✅ solo lo necesario
+    //console.log('Middleware: usuarioId obtenido', req.usuarioId);
     next();
   } catch (error) {
-    return res.status(401).json({ mensaje: 'Token inválido' });
+    //console.error('❌ Error al verificar token:', error.message);
+    res.status(401).json({ mensaje: 'Token inválido.' });
   }
-};
+}
 
 module.exports = verificarToken;
