@@ -6,7 +6,11 @@ const { Orden, Producto } = require('../models/models'); // Cambiado de 'Venta' 
 const WOMPI_API_URL = 'https://sandbox.wompi.co/v1/payment_links';
 const INICIO_LINK_PAGO = 'https://checkout.wompi.co/l/';
 const WOMPI_PRIVATE_KEY = process.env.WOMPI_PRIVATE_KEY;
+
 console.log('🛠️ pagos.routes.js cargado correctamente');
+router.get('/crear-link-pago', (req, res) => {
+  res.status(200).json({ mensaje: '🟢 Ruta POST /crear-link-pago está activa. Usa POST para crear links de pago.' });
+});
 
 router.post('/crear-link-pago', async (req, res) => {
   try {
