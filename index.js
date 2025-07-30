@@ -20,7 +20,8 @@ const PORT = process.env.PORT || 5000;
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://colbogbike.vercel.app'
+  'https://tienda-bm-frontend-david-lancheros-projects.vercel.app',
+  'https://colbogbike.vercel.app' // 👈 AGREGA ESTO
 ];
 
 app.use(cors({
