@@ -24,3 +24,4 @@ router.post('/:id/variantes', verificarToken, actualizarVariantes);
 router.post('/:id/resena', verificarToken, agregarResena);
 
 module.exports = router;
+// 🔧 Forzando redeploy para /variantes y /ordenes
